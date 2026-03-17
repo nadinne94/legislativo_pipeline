@@ -68,9 +68,9 @@ votacoes_schema = StructType([
 ])
 
 votos_schema = StructType([
-    StructField("idVotacao", LongType(), True),
+    StructField("idVotacao", StringType(), True),
     StructField("idDeputado", LongType(), True),
-    StructField("parent_id", LongType(), True),
+    StructField("parent_id", StringType(), True),
     StructField("nomeDeputado", StringType(), True),
     StructField("voto", StringType(), True),
     StructField("data_ingestao", TimestampType(), True)

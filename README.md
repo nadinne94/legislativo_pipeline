@@ -64,8 +64,13 @@ Durante a revisão do pipeline, foram identificados e corrigidos os seguintes po
 
 ### `treatment/silver_runner_camara.py`
 
-*   **Problema:** Erro na coluna utilizada para a data de apresentação das proposições. A coluna `dataApresentacao` estava sendo referenciada, mas a API da Câmara retorna `dataApresentacaoInicio` para este fim.
-*   **Correção:** Alterada a referência da coluna de `dataApresentacao` para `dataApresentacaoInicio` na etapa de processamento de proposições, garantindo a correta tipagem e extração da data.
+*   **Problema de Mapeamento:** Erro na coluna utilizada para a data de apresentação das proposições. A coluna `dataApresentacao` estava sendo referenciada, mas a API da Câmara retorna `dataApresentacaoInicio`.
+*   **Problema de Tipagem (Votações/Votos):** O campo `id_votacao` estava sendo convertido para `long`, porém a API da Câmara utiliza um formato alfanumérico (ex: `2351239-4`), causando erro de cast (`CAST_INVALID_INPUT`).
+*   **Problema de Formatação de Data:** Formatos fixos em `to_date` e `to_timestamp` causavam falhas ao encontrar variações nos dados da API (presença ou ausência de segundos/milissegundos).
+*   **Correções:**
+    *   Alterada a referência da coluna de `dataApresentacao` para `dataApresentacaoInicio`.
+    *   Alterado o tipo de `id_votacao` de `long` para `string` em todas as tabelas relacionadas (`votacoes`, `votos` e esquemas Bronze).
+    *   Removidos formatos fixos de data/timestamp para permitir o parsing automático e resiliente do Spark.
 
 ## Como Executar
 

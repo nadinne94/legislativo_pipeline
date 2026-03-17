@@ -122,7 +122,7 @@ try:
         col("numero").cast("int"),
         col("ano").cast("int"),
         col("ementa"),
-        to_date(col("dataApresentacaoInicio"), "yyyy-MM-dd").alias("data_apresentacao"),
+        to_date(col("dataApresentacaoInicio")).alias("data_apresentacao"),
         classify_theme_udf(col("ementa")).alias("tema_principal"), # Aplicação da Taxonomia
         current_timestamp().alias("data_processamento")
     )
@@ -177,7 +177,7 @@ try:
     # Silver Eventos
     df_eventos_silver = df_eventos.select(
         col("id").cast("long").alias("id_evento"),
-        to_timestamp(col("dataHoraInicio"), "yyyy-MM-dd'T'HH:mm").alias("data_hora_inicio"),
+        to_timestamp(col("dataHoraInicio")).alias("data_hora_inicio"),
         col("descricao").alias("descricao_evento"),
         current_timestamp().alias("data_processamento")
     )
@@ -220,7 +220,7 @@ try:
 
     # Silver Votações
     df_votacoes_silver = df_votacoes.select(
-        col("id").cast("long").alias("id_votacao"),
+        col("id").cast("string").alias("id_votacao"),
         to_date(col("data"), "yyyy-MM-dd").alias("data_votacao"),
         col("descricao").alias("descricao_votacao"),
         current_timestamp().alias("data_processamento")
@@ -229,7 +229,7 @@ try:
 
     # Silver Votos
     df_votos_silver = df_votos.select(
-        col("idVotacao").cast("long").alias("id_votacao"),
+        col("idVotacao").cast("string").alias("id_votacao"),
         col("idDeputado").cast("long").alias("id_deputado"),
         col("nomeDeputado").alias("nome_deputado"),
         col("voto"),
