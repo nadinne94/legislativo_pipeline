@@ -136,12 +136,9 @@ def ingest_simple_dataset(dataset_name, config):
     # ----------------------------
     # CHAMADA DA API
     # ----------------------------
-
-    try:
+=======
         data = get_all_pages(endpoint, params)
-    except Exception as e:
-        print(f"Erro ao coletar dados para {dataset_name}: {e}")
-        raise e
+>>>>>>> Stashed changes
 
     if not data:
         print(f"Nenhum registro retornado para {dataset_name}")
@@ -160,6 +157,7 @@ def ingest_simple_dataset(dataset_name, config):
             
     df = df_raw.select(*[c for c in expected_cols if c != "data_ingestao"])
     df = df.withColumn("data_ingestao", current_timestamp())
+
 
     # ----------------------------
     # ATUALIZA WATERMARK
@@ -199,6 +197,7 @@ def ingest_nested_dataset(dataset_name, config):
         print(f"Erro ao ler pai {parent_dataset}: {e}")
         return
 
+<<<<<<< Updated upstream
     try:
         data = fetch_nested_data(config["endpoint"], parent_ids)
     except Exception as e:
@@ -209,6 +208,13 @@ def ingest_nested_dataset(dataset_name, config):
         print(f"Nenhum registro retornado para {dataset_name}")
         return
 
+=======
+        data = fetch_nested_data(config["endpoint"], parent_ids)
+    if not data:
+        print(f"Nenhum registro retornado para {dataset_name}")
+        return
+
+>>>>>>> Stashed changes
     # Cria DataFrame com schema flexível
     df_raw = spark.createDataFrame(data)
     from pyspark.sql.functions import lit
@@ -219,6 +225,8 @@ def ingest_nested_dataset(dataset_name, config):
             
     df = df_raw.select(*[c for c in expected_cols if c != "data_ingestao"])
     df = df.withColumn("data_ingestao", current_timestamp())
+
+
     write_bronze(df, dataset_name, config)
     log_pipeline_event(dataset_name, "SUCCESS", records=len(data))
 

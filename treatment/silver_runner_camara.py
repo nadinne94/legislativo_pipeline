@@ -11,7 +11,7 @@
 # COMMAND ----------
 
 # DBTITLE 1,Importação de Dependências Spark SQL
-from pyspark.sql.functions import col, to_date, to_timestamp, current_timestamp, when, lit, udf
+from pyspark.sql.functions import col, to_date, to_timestamp, current_timestamp, when, lit, udf, element_at, split
 from pyspark.sql.types import StringType
 from delta.tables import DeltaTable
 
@@ -23,7 +23,7 @@ def write_silver(df, table_name, merge_keys):
     Grava os dados na camada Silver utilizando MERGE para evitar duplicidade.
     Garante que os dados limpos sejam integrados corretamente à camada intermediária.
     """
-    path = f"{ProjectConfig.SILVER_PATH}/{table_name}"
+    path = f"{ProjectConfig.SILVER_PATH}/camara/{table_name}"
     
     if not DeltaTable.isDeltaTable(spark, path):
         df.write.format("delta").mode("overwrite").save(path)
@@ -97,6 +97,7 @@ df_deputados_silver = df_deputados.select(
     current_timestamp().alias("data_processamento")
 )
 
+
 write_silver(df_deputados_silver, "deputados", ["id_deputado"])
 
 # COMMAND ----------
@@ -153,8 +154,12 @@ try:
         col("tipo").alias("tipo_autor"),
         current_timestamp().alias("data_processamento")
     )
-
     write_silver(df_autores_silver, "proposicoes_autores", ["id_proposicao", "nome_autor"])
+
+<<<<<<< Updated upstream
+    write_silver(df_autores_silver, "proposicoes_autores", ["id_proposicao", "nome_autor"])
+=======
+>>>>>>> Stashed changes
 except Exception as e:
     print(f"Aviso: Falha ao processar Autores: {e}")
 
@@ -221,7 +226,11 @@ try:
     # Silver Votações
     df_votacoes_silver = df_votacoes.select(
         col("id").cast("string").alias("id_votacao"),
+<<<<<<< Updated upstream
         to_date(col("data"), "yyyy-MM-dd").alias("data_votacao"),
+=======
+        to_date(col("data")).alias("data_votacao"),
+>>>>>>> Stashed changes
         col("descricao").alias("descricao_votacao"),
         current_timestamp().alias("data_processamento")
     )
