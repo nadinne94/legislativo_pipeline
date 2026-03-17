@@ -20,13 +20,11 @@ from pyspark.sql.types import StructType, StructField, StringType, IntegerType, 
 deputados_schema = StructType([
     StructField("id", LongType(), True),
     StructField("uri", StringType(), True),
-    StructField("nomeCivil", StringType(), True),
+    StructField("nome", StringType(), True),
     StructField("siglaPartido", StringType(), True),
-    StructField("uf", StringType(), True),
+    StructField("siglaUf", StringType(), True),
     StructField("urlFoto", StringType(), True),
     StructField("email", StringType(), True),
-    StructField("dataNascimento", StringType(), True),
-    StructField("sexo", StringType(), True),
     StructField("data_ingestao", TimestampType(), True)
 ])
 
@@ -50,11 +48,13 @@ proposicoes_schema = StructType([
 ])
 
 proposicoes_autores_schema = StructType([
-    StructField("idProposicao", LongType(), True),
-    StructField("idAutor", LongType(), True),
+    StructField("nome", StringType(), True),
+    StructField("tipo", StringType(), True),
+    StructField("uri", StringType(), True),
+    StructField("codTipo", IntegerType(), True),
+    StructField("ordemAssinatura", IntegerType(), True),
+    StructField("proponente", IntegerType(), True),
     StructField("parent_id", LongType(), True),
-    StructField("nomeAutor", StringType(), True),
-    StructField("tipoAutor", StringType(), True),
     StructField("data_ingestao", TimestampType(), True)
 ])
 
@@ -152,7 +152,7 @@ CAMARA_DATASETS = {
         "incremental": False,
         "pagination": False,
         "requires_parent": "proposicoes",
-        "merge_keys": ["idProposicao", "idAutor"],
+        "merge_keys": ["parent_id", "nome"],
         "schema": BRONZE_SCHEMAS["proposicoes_autores"]
     },
     "votacoes": {

@@ -62,15 +62,17 @@ Durante a revisão do pipeline, foram identificados e corrigidos os seguintes po
 *   **Problema:** A delta table `votos` não estava sendo criada corretamente devido a uma lógica falha na extração de `parent_ids` para datasets aninhados e uma verificação duplicada de `if not data: return` que poderia impedir a criação da tabela em caso de dados vazios na primeira execução.
 *   **Correção:** Ajustada a lógica para garantir que `parent_ids` sejam corretamente extraídos e que a verificação de dados vazios seja feita de forma única e eficaz, permitindo a criação da tabela `votos` mesmo que a primeira chamada retorne vazio, mas garantindo que o processo não continue sem dados válidos.
 
-### `treatment/silver_runner_camara.py`
+### Camadas Bronze e Silver (Mapeamento e Integridade)
 
-*   **Problema de Mapeamento:** Erro na coluna utilizada para a data de apresentação das proposições. A coluna `dataApresentacao` estava sendo referenciada, mas a API da Câmara retorna `dataApresentacaoInicio`.
-*   **Problema de Tipagem (Votações/Votos):** O campo `id_votacao` estava sendo convertido para `long`, porém a API da Câmara utiliza um formato alfanumérico (ex: `2351239-4`), causando erro de cast (`CAST_INVALID_INPUT`).
-*   **Problema de Formatação de Data:** Formatos fixos em `to_date` e `to_timestamp` causavam falhas ao encontrar variações nos dados da API (presença ou ausência de segundos/milissegundos).
-*   **Correções:**
-    *   Alterada a referência da coluna de `dataApresentacao` para `dataApresentacaoInicio`.
-    *   Alterado o tipo de `id_votacao` de `long` para `string` em todas as tabelas relacionadas (`votacoes`, `votos` e esquemas Bronze).
-    *   Removidos formatos fixos de data/timestamp para permitir o parsing automático e resiliente do Spark.
+*   **Problema de Campos Nulos (Deputados/Autores):** Diversos campos importantes como `nome_completo`, `uf_origem`, `id_proposicao` e `id_autor` estavam resultando em `null`.
+    *   **Causa:** Inconsistência entre os nomes dos campos nos schemas (ex: `nomeCivil`, `uf`) e o que a API realmente retorna no endpoint de listagem (`nome`, `siglaUf`). Além disso, o endpoint de autores não fornece o `idAutor` diretamente, apenas na URI.
+*   **Problema de Mapeamento (Proposições):** A coluna `dataApresentacao` estava sendo referenciada, mas a API retorna `dataApresentacaoInicio`.
+*   **Problema de Tipagem (Votações/Votos):** O campo `id_votacao` causava erro de cast (`CAST_INVALID_INPUT`) ao ser tratado como `long`, sendo que a API utiliza formato alfanumérico.
+*   **Correções Implementadas:**
+    *   **Resiliência no Bronze:** O `bronze_runner` agora cria DataFrames de forma flexível, garantindo que colunas ausentes na API sejam preenchidas com nulo sem quebrar o pipeline, e mapeando corretamente os campos existentes.
+    *   **Correção de Schemas:** Atualizados os nomes dos campos em `camara_datasets.py` para coincidir com o retorno real da API (v2).
+    *   **Extração Inteligente:** No `silver_runner`, o `id_autor` agora é extraído dinamicamente da URI do autor via regex/split.
+    *   **Tipagem e Datas:** Alterado `id_votacao` para `string` e removidos formatos fixos de data para permitir o parsing automático e resiliente do Spark.
 
 ## Como Executar
 

@@ -89,11 +89,9 @@ df_deputados = spark.read.format("delta").load(f"{ProjectConfig.BRONZE_PATH}/cam
 
 df_deputados_silver = df_deputados.select(
     col("id").cast("long").alias("id_deputado"),
-    col("nomeCivil").alias("nome_completo"),
+    col("nome").alias("nome_completo"),
     col("siglaPartido").alias("sigla_partido"),
-    col("uf").alias("uf_origem"),
-    col("sexo"),
-    to_date(col("dataNascimento"), "yyyy-MM-dd").alias("data_nascimento"),
+    col("siglaUf").alias("uf_origem"),
     col("email"),
     col("urlFoto").alias("url_foto"),
     current_timestamp().alias("data_processamento")
@@ -146,15 +144,17 @@ try:
     print("Processando Autores de Proposições...")
     df_autores = spark.read.format("delta").load(f"{ProjectConfig.BRONZE_PATH}/camara/proposicoes_autores")
 
+    from pyspark.sql.functions import element_at, split
+    
     df_autores_silver = df_autores.select(
-        col("idProposicao").cast("long").alias("id_proposicao"),
-        col("idAutor").cast("long").alias("id_autor"),
-        col("nomeAutor").alias("nome_autor"),
-        col("tipoAutor").alias("tipo_autor"),
+        col("parent_id").cast("long").alias("id_proposicao"),
+        element_at(split(col("uri"), "/"), -1).cast("long").alias("id_autor"),
+        col("nome").alias("nome_autor"),
+        col("tipo").alias("tipo_autor"),
         current_timestamp().alias("data_processamento")
     )
 
-    write_silver(df_autores_silver, "proposicoes_autores", ["id_proposicao", "id_autor"])
+    write_silver(df_autores_silver, "proposicoes_autores", ["id_proposicao", "nome_autor"])
 except Exception as e:
     print(f"Aviso: Falha ao processar Autores: {e}")
 

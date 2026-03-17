@@ -143,7 +143,18 @@ def ingest_simple_dataset(dataset_name, config):
         print(f"Nenhum registro retornado para {dataset_name}")
         return
 
-    df = spark.createDataFrame(data, schema=config["schema"])
+    # Cria DataFrame com schema flexível para evitar erros de campos faltantes na API
+    df_raw = spark.createDataFrame(data)
+    
+    # Seleciona apenas as colunas que existem tanto no dado quanto no schema esperado
+    # Preenche com nulo as colunas que estão no schema mas não vieram no dado
+    from pyspark.sql.functions import lit
+    expected_cols = config["schema"].fieldNames()
+    for col_name in expected_cols:
+        if col_name not in df_raw.columns and col_name != "data_ingestao":
+            df_raw = df_raw.withColumn(col_name, lit(None))
+            
+    df = df_raw.select(*[c for c in expected_cols if c != "data_ingestao"])
     df = df.withColumn("data_ingestao", current_timestamp())
 
     # ----------------------------
@@ -189,8 +200,15 @@ def ingest_nested_dataset(dataset_name, config):
         print(f"Nenhum registro retornado para {dataset_name}")
         return
 
-
-    df = spark.createDataFrame(data, schema=config["schema"])
+    # Cria DataFrame com schema flexível
+    df_raw = spark.createDataFrame(data)
+    from pyspark.sql.functions import lit
+    expected_cols = config["schema"].fieldNames()
+    for col_name in expected_cols:
+        if col_name not in df_raw.columns and col_name != "data_ingestao":
+            df_raw = df_raw.withColumn(col_name, lit(None))
+            
+    df = df_raw.select(*[c for c in expected_cols if c != "data_ingestao"])
     df = df.withColumn("data_ingestao", current_timestamp())
     write_bronze(df, dataset_name, config)
     log_pipeline_event(dataset_name, "SUCCESS", records=len(data))
