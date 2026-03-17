@@ -137,7 +137,11 @@ def ingest_simple_dataset(dataset_name, config):
     # CHAMADA DA API
     # ----------------------------
 
-    data = get_all_pages(endpoint, params)
+    try:
+        data = get_all_pages(endpoint, params)
+    except Exception as e:
+        print(f"Erro ao coletar dados para {dataset_name}: {e}")
+        raise e
 
     if not data:
         print(f"Nenhum registro retornado para {dataset_name}")
@@ -195,7 +199,12 @@ def ingest_nested_dataset(dataset_name, config):
         print(f"Erro ao ler pai {parent_dataset}: {e}")
         return
 
-    data = fetch_nested_data(config["endpoint"], parent_ids)
+    try:
+        data = fetch_nested_data(config["endpoint"], parent_ids)
+    except Exception as e:
+        print(f"Erro ao coletar dados dependentes para {dataset_name}: {e}")
+        raise e
+
     if not data:
         print(f"Nenhum registro retornado para {dataset_name}")
         return
