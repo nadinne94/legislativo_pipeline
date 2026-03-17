@@ -8,23 +8,68 @@ Este projeto implementa um pipeline de dados robusto e escalável para coletar, 
 
 O principal objetivo é democratizar o acesso aos dados legislativos, fornecendo uma base sólida para pesquisadores, jornalistas, cidadãos e analistas políticos. Através da ingestão contínua e do processamento inteligente, o projeto visa facilitar a compreensão do complexo cenário político brasileiro.
 
+## Estrutura do Projeto
+
+Disposição dos diretórios:
+
+```
+legislativo_pipeline_v3_DEFINITIVE_FIXED
+│
+├── config
+│   ├── project_config.py
+│   ├── bronze_sources.py
+│   └── camara_datasets.py
+│
+├── utils
+│   ├── api_utils.py
+│   ├── logging_utils.py
+│   └── incremental_utils.py
+│
+├── ingestion
+│   └── bronze_runner_camara.py
+│
+├── silver
+│   └── silver_runner_camara.py
+└── gold
+    └── gold_runner_camara.py
+```
+
 ## Arquitetura do Pipeline: Medallion Architecture
 
 O pipeline segue a **Arquitetura Medallion**, um padrão de design de dados que organiza os dados em três camadas principais: Bronze, Silver e Gold. Essa abordagem garante a qualidade, a confiabilidade e a usabilidade dos dados em cada estágio do processamento.
 
-### 1. Camada Bronze (Raw Data)
+```
+API Câmara dos Deputados
+          │
+          ▼
+      Bronze Layer
+   (Dados brutos da API)
+          │
+          ▼
+      Silver Layer
+ (Dados limpos e estruturados)
+          │
+          ▼
+      Gold Layer
+(Modelos analíticos prontos)
+```
+## Desenvolvimento do Projeto
+
+### 1. Configurações do Projeto
+### 2. Utilitários
+### 3. Camada Bronze (Raw Data)
 
 *   **Propósito:** Armazenar os dados brutos, exatamente como são recebidos da fonte, sem qualquer transformação. Serve como um histórico imutável dos dados originais.
 *   **Conteúdo:** Dados diretamente da API da Câmara dos Deputados (deputados, proposições, votações, eventos, etc.).
 *   **Formato:** Delta Lake.
 
-### 2. Camada Silver (Cleaned & Conformed Data)
+### 4. Camada Silver (Cleaned & Conformed Data)
 
 *   **Propósito:** Limpar, padronizar e enriquecer os dados da camada Bronze. Aplica transformações básicas, como correção de tipos de dados, tratamento de valores nulos e desduplicação.
 *   **Conteúdo:** Dados limpos e estruturados, prontos para análises mais aprofundadas. Inclui a classificação temática de proposições.
 *   **Formato:** Delta Lake.
 
-### 3. Camada Gold (Curated & Business-Ready Data)
+### 5. Camada Gold (Curated & Business-Ready Data)
 
 *   **Propósito:** Fornecer dados agregados e otimizados para casos de uso específicos de negócios e análises. Esta camada é projetada para consumo direto por ferramentas de BI, modelos de Machine Learning e aplicações.
 *   **Conteúdo:** Tabelas sumarizadas, dimensões e fatos que respondem a perguntas de negócios específicas (ex: ranking de deputados por presença, proposições por tema).
