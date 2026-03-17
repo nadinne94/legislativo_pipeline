@@ -122,7 +122,7 @@ try:
         col("numero").cast("int"),
         col("ano").cast("int"),
         col("ementa"),
-        to_date(col("dataApresentacao"), "yyyy-MM-dd'T'HH:mm").alias("data_apresentacao"),
+        to_date(col("dataApresentacaoInicio"), "yyyy-MM-dd").alias("data_apresentacao"),
         classify_theme_udf(col("ementa")).alias("tema_principal"), # Aplicação da Taxonomia
         current_timestamp().alias("data_processamento")
     )

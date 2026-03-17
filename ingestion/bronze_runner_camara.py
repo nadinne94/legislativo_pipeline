@@ -179,13 +179,16 @@ def ingest_nested_dataset(dataset_name, config):
     try:
         parent_df = spark.read.format("delta").load(parent_path)
         # Limita para não estourar a API em testes iniciais
-        parent_ids = [r["id"] for r in parent_df.select("id").distinct().limit(ProjectConfig.MAX_PARENT_IDS).collect()]
+            parent_ids = [r["id"] for r in parent_df.select("id").distinct().limit(ProjectConfig.MAX_PARENT_IDS).collect()]
     except Exception as e:
         print(f"Erro ao ler pai {parent_dataset}: {e}")
         return
 
     data = fetch_nested_data(config["endpoint"], parent_ids)
-    if not data: return
+    if not data:
+        print(f"Nenhum registro retornado para {dataset_name}")
+        return
+
 
     df = spark.createDataFrame(data, schema=config["schema"])
     df = df.withColumn("data_ingestao", current_timestamp())

@@ -1,423 +1,87 @@
-# Pipeline de Dados Legislativos — Câmara dos Deputados
+# Pipeline de Dados Legislativos da Câmara dos Deputados
 
-## Visão Geral
+## Visão Geral do Projeto
 
-Este projeto implementa um **pipeline de engenharia de dados em arquitetura Lakehouse** para ingestão e organização de dados legislativos disponibilizados pela API pública da Câmara dos Deputados.
+Este projeto implementa um pipeline de dados robusto e escalável para coletar, processar e analisar informações da Câmara dos Deputados do Brasil. Utilizando a arquitetura Medallion, o pipeline transforma dados brutos da API oficial em conjuntos de dados limpos, estruturados e prontos para análise, permitindo insights sobre a atividade legislativa, o desempenho dos parlamentares e as tendências políticas.
 
-O pipeline realiza:
+## Objetivo
 
-* ingestão automatizada da API
-* tratamento de paginação e retries
-* controle de ingestão incremental
-* persistência em **Delta Lake**
-* organização em camadas **Bronze → Silver → Gold**
+O principal objetivo é democratizar o acesso aos dados legislativos, fornecendo uma base sólida para pesquisadores, jornalistas, cidadãos e analistas políticos. Através da ingestão contínua e do processamento inteligente, o projeto visa facilitar a compreensão do complexo cenário político brasileiro.
 
-O objetivo é disponibilizar dados legislativos estruturados para **análise política, ciência de dados e construção de dashboards analíticos**.
+## Arquitetura do Pipeline: Medallion Architecture
 
-## Arquitetura
+O pipeline segue a **Arquitetura Medallion**, um padrão de design de dados que organiza os dados em três camadas principais: Bronze, Silver e Gold. Essa abordagem garante a qualidade, a confiabilidade e a usabilidade dos dados em cada estágio do processamento.
 
-Arquitetura baseada no padrão **Medallion Architecture (Lakehouse)**.
+### 1. Camada Bronze (Raw Data)
 
-```
-API Câmara
-     │
-     ▼
-Bronze (Raw API ingestion)
-     │
-     ▼
-Silver (Data cleansing)
-     │
-     ▼
-Gold (Analytics / BI)
-```
+*   **Propósito:** Armazenar os dados brutos, exatamente como são recebidos da fonte, sem qualquer transformação. Serve como um histórico imutável dos dados originais.
+*   **Conteúdo:** Dados diretamente da API da Câmara dos Deputados (deputados, proposições, votações, eventos, etc.).
+*   **Formato:** Delta Lake.
 
-Camadas:
+### 2. Camada Silver (Cleaned & Conformed Data)
 
-| Camada | Objetivo               |
-| ------ | ---------------------- |
-| Bronze | Ingestão bruta da API  |
-| Silver | Limpeza e normalização |
-| Gold   | Modelos analíticos     |
+*   **Propósito:** Limpar, padronizar e enriquecer os dados da camada Bronze. Aplica transformações básicas, como correção de tipos de dados, tratamento de valores nulos e desduplicação.
+*   **Conteúdo:** Dados limpos e estruturados, prontos para análises mais aprofundadas. Inclui a classificação temática de proposições.
+*   **Formato:** Delta Lake.
 
-## Estrutura do Projeto
+### 3. Camada Gold (Curated & Business-Ready Data)
 
-```
-legislativo_pipeline_v3_DEFINITIVE_FIXED
+*   **Propósito:** Fornecer dados agregados e otimizados para casos de uso específicos de negócios e análises. Esta camada é projetada para consumo direto por ferramentas de BI, modelos de Machine Learning e aplicações.
+*   **Conteúdo:** Tabelas sumarizadas, dimensões e fatos que respondem a perguntas de negócios específicas (ex: ranking de deputados por presença, proposições por tema).
+*   **Formato:** Delta Lake.
 
-config/
-    project_config.py
-    bronze_sources.py
-    camara_datasets.py
+## Fontes de Dados
 
-utils/
-    api_utils.py
-    logging_utils.py
-    incremental_utils.py
-
-ingestion/
-    bronze_runner_camara.py
-
-silver/
-    silver_runner_camara.py
-
-gold/
-    gold_runner_camara.py
-```
-
-## 1. Configuração do Projeto
-
-Arquivo:
-
-```
-config/project_config.py
-```
-
-Centraliza configurações globais do pipeline.
-
-Principais parâmetros:
-
-| Parâmetro               | Função                           |
-| ----------------------- | -------------------------------- |
-| API_BASE_URL            | Endpoint base da API legislativa |
-| REQUEST_TIMEOUT         | Timeout das requisições          |
-| API_REQUEST_DELAY       | Delay entre chamadas             |
-| MAX_PAGES_PER_EXECUTION | Controle de paginação            |
-
-Exemplo conceitual:
-
-```python
-class ProjectConfig:
-
-    API_BASE_URL = "https://dadosabertos.camara.leg.br/api/v2"
-
-    REQUEST_TIMEOUT = 30
-
-    API_REQUEST_DELAY = 0.2
-
-    MAX_PAGES_PER_EXECUTION = 120
-```
-
-Esse design permite **configuração centralizada e reutilizável**.
-
-## 2. Definição das Fontes Bronze
-
-Arquivo:
-
-```
-config/bronze_sources.py
-```
-
-Define **quais recursos da API serão ingeridos**.
-
-Exemplos:
-
-* deputados
-* partidos
-* proposições
-* votações
-
-Cada fonte possui:
-
-| Campo              | Descrição                              |
-| ------------------ | -------------------------------------- |
-| endpoint           | endpoint da API                        |
-| table_name         | tabela Delta                           |
-| incremental_column | coluna usada para ingestão incremental |
-
-Exemplo conceitual:
-
-```python
-{
-    "name": "proposicoes",
-    "endpoint": "/proposicoes",
-    "incremental_column": "dataApresentacao"
-}
-```
-
-Isso permite adicionar novas fontes **sem alterar o pipeline principal**.
-
-## 3. Catálogo de Datasets
-
-Arquivo:
-
-```
-config/camara_datasets.py
-```
-
-Responsável por estruturar metadados dos datasets.
-
-Define:
-
-* nomes das tabelas
-* endpoints relacionados
-* dependências entre datasets
-
-Isso permite gerenciar **datasets complexos com relações hierárquicas**.
-
-Exemplo:
-
-```
-proposicoes
-   ├── autores
-   ├── temas
-   └── votacoes
-```
-
-## 4. Utilitários de API
-
-Arquivo:
-
-```
-utils/api_utils.py
-```
-
-Responsável pela comunicação com a API.
-
-Principais funções:
-
-| Função                   | Objetivo                     |
-| ------------------------ | ---------------------------- |
-| build_endpoint_url       | montar URL                   |
-| request_api              | requisição com retry         |
-| get_next_page_link       | paginação automática         |
-| get_all_pages            | coleta paginada              |
-| get_nested_endpoint_data | coleta endpoints dependentes |
-
-### Retry Automático
-
-A função `request_api` implementa **tratamento de falhas temporárias**.
-
-Problemas tratados:
-
-* HTTP 500
-* HTTP 504
-* timeout
-
-Estratégia:
-
-```
-try request
-   ↓
-fail
-   ↓
-retry (até 3 tentativas)
-```
-
-Isso evita falhas causadas por instabilidade da API.
-
-### Paginação Automática
-
-A API da Câmara usa o padrão:
-
-```
-links:
-   rel = next
-```
-
-A função `get_next_page_link` detecta automaticamente a próxima página.
-
-Fluxo:
-
-```
-pagina 1
-  ↓
-pagina 2
-  ↓
-pagina 3
-  ↓
-...
-```
-
-### Controle de Paginação
-
-Foi implementado controle para evitar execuções gigantes:
-
-```
-MAX_PAGES_PER_EXECUTION
-```
-
-Isso evita casos como:
-
-```
-/proposicoes
-500+ páginas
-```
-
-## 5. Logging do Pipeline
-
-Arquivo:
-
-```
-utils/logging_utils.py
-```
-
-Responsável por registrar execução do pipeline.
-
-Eventos registrados:
-
-* START
-* SUCCESS
-* ERROR
-
-Exemplo de log:
-
-```
-Log gravado: deputados | Status: START
-Log gravado: deputados | Status: SUCCESS
-```
-
-Esse registro permite:
-
-* auditoria de execução
-* rastreabilidade
-* monitoramento
-
-## 6. Ingestão Incremental
-
-Arquivo:
-
-```
-utils/incremental_utils.py
-```
-
-Implementa ingestão incremental baseada em data.
-
-Fluxo:
-
-```
-ler última data do Delta
-      ↓
-usar como dataInicio
-      ↓
-buscar novos registros
-```
-
-Exemplo:
-
-```
-dataInicio=2024-01-01
-```
-
-Isso evita reprocessamento completo da API.
-
-## 7. Runner de Ingestão Bronze
-
-Arquivo:
-
-```
-ingestion/bronze_runner_camara.py
-```
-
-É o **orquestrador da ingestão**.
-
-Fluxo principal:
-
-```
-para cada fonte configurada:
-
-    registrar START
-
-    coletar dados da API
-
-    converter para dataframe
-
-    salvar no Delta Lake
-
-    registrar SUCCESS
-```
-
-### Pipeline Bronze
-
-Fluxo completo:
-
-```
-config → sources
-      ↓
-api_utils → API
-      ↓
-incremental_utils → controle incremental
-      ↓
-Spark DataFrame
-      ↓
-Delta Lake
-```
-
-### Persistência em Delta Lake
-
-Os dados são salvos em formato **Delta**.
-
-Vantagens:
-
-| Recurso          | Benefício                |
-| ---------------- | ------------------------ |
-| ACID             | integridade transacional |
-| Time Travel      | histórico de versões     |
-| Schema evolution | evolução de schema       |
-| Performance      | leitura otimizada        |
-
----
-
-### Tabelas Bronze
-
-Exemplos de tabelas geradas:
-
-```
-bronze.deputados
-bronze.partidos
-bronze.proposicoes
-bronze.votacoes
-```
-
-Essas tabelas contêm os **dados brutos da API**.
-
-### Estratégia de Escalabilidade
-
-O pipeline foi projetado para lidar com:
-
-* grandes volumes de páginas
-* endpoints com milhares de registros
-* instabilidade da API pública
-
-Soluções aplicadas:
-
-| Problema           | Solução                 |
-| ------------------ | ----------------------- |
-| timeout da API     | retry automático        |
-| paginação infinita | limite de páginas       |
-| reprocessamento    | ingestão incremental    |
-| instabilidade      | delay entre requisições |
-
----
-
-### Segurança e Boas Práticas
-
-Boas práticas aplicadas:
-
-* separação de camadas
-* código modular
-* configuração centralizada
-* logs de execução
-* retry resiliente
-* controle de paginação
-
-## Casos de Uso Analítico
-
-Após processamento nas camadas Silver e Gold, os dados permitem análises como:
-
-* produtividade legislativa
-* comportamento de votação
-* rede de autores de proposições
-* análise temporal de leis
-* análise partidária
-
+Os dados são coletados diretamente da **API de Dados Abertos da Câmara dos Deputados** [1], que oferece acesso programático a uma vasta gama de informações legislativas.
 
 ## Tecnologias Utilizadas
 
-| Tecnologia | Uso                  |
-| ---------- | -------------------- |
-| Python     | ingestão             |
-| Spark      | processamento        |
-| Delta Lake | armazenamento        |
-| REST API   | fonte de dados       |
-| Databricks | execução do pipeline |
+*   **Databricks:** Plataforma unificada para engenharia de dados, Machine Learning e BI.
+*   **Apache Spark:** Motor de processamento de dados distribuído para lidar com grandes volumes de dados.
+*   **Delta Lake:** Camada de armazenamento de dados que oferece transações ACID, versionamento e metadados para o data lake.
+*   **Python:** Linguagem de programação principal para o desenvolvimento do pipeline.
+*   **Requests:** Biblioteca HTTP para interagir com a API da Câmara.
+*   **ThreadPoolExecutor:** Para paralelização de chamadas à API.
 
+## Estrutura do Repositório
+
+O repositório está organizado nas seguintes pastas:
+
+*   `config/`: Contém arquivos de configuração global do projeto, como URLs de API, caminhos de armazenamento e esquemas de dados.
+*   `utils/`: Módulos utilitários com funções auxiliares para interação com a API, logging e lógica incremental.
+*   `ingestion/`: Notebooks responsáveis pela ingestão de dados brutos da API para a camada Bronze (`bronze_runner_camara.py`).
+*   `treatment/`: Notebooks para o processamento e limpeza dos dados da camada Bronze para a camada Silver (`silver_runner_camara.py`).
+*   `analytics/`: Notebooks para a criação de tabelas agregadas e análises na camada Gold.
+
+## Correções Implementadas
+
+Durante a revisão do pipeline, foram identificados e corrigidos os seguintes pontos:
+
+### `ingestion/bronze_runner_camara.py`
+
+*   **Problema:** A delta table `votos` não estava sendo criada corretamente devido a uma lógica falha na extração de `parent_ids` para datasets aninhados e uma verificação duplicada de `if not data: return` que poderia impedir a criação da tabela em caso de dados vazios na primeira execução.
+*   **Correção:** Ajustada a lógica para garantir que `parent_ids` sejam corretamente extraídos e que a verificação de dados vazios seja feita de forma única e eficaz, permitindo a criação da tabela `votos` mesmo que a primeira chamada retorne vazio, mas garantindo que o processo não continue sem dados válidos.
+
+### `treatment/silver_runner_camara.py`
+
+*   **Problema:** Erro na coluna utilizada para a data de apresentação das proposições. A coluna `dataApresentacao` estava sendo referenciada, mas a API da Câmara retorna `dataApresentacaoInicio` para este fim.
+*   **Correção:** Alterada a referência da coluna de `dataApresentacao` para `dataApresentacaoInicio` na etapa de processamento de proposições, garantindo a correta tipagem e extração da data.
+
+## Como Executar
+
+Para executar este pipeline, é necessário um ambiente Databricks configurado com acesso a um bucket S3. Os notebooks devem ser importados para o workspace do Databricks e executados na seguinte ordem:
+
+1.  `config/project_config.py` (para inicializar as configurações)
+2.  `ingestion/bronze_runner_camara.py` (para ingestão dos dados brutos)
+3.  `treatment/silver_runner_camara.py` (para limpeza e transformação dos dados)
+4.  `analytics/gold_runner_camara.py` (para agregação e análise)
+
+Certifique-se de configurar as credenciais do S3 no ambiente Databricks para que o pipeline possa ler e escrever nos caminhos definidos em `project_config.py`.
+
+## Contato
+
+Para dúvidas ou sugestões, entre em contato com [Seu Nome/Organização].
+
+## Referências
+
+[1] [API de Dados Abertos da Câmara dos Deputados](https://dadosabertos.camara.leg.br/api/v2/)
