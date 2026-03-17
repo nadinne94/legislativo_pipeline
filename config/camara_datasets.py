@@ -20,21 +20,12 @@ from pyspark.sql.types import StructType, StructField, StringType, IntegerType, 
 deputados_schema = StructType([
     StructField("id", LongType(), True),
     StructField("uri", StringType(), True),
-<<<<<<< Updated upstream
-    StructField("nome", StringType(), True),
-    StructField("siglaPartido", StringType(), True),
-    StructField("siglaUf", StringType(), True),
-    StructField("urlFoto", StringType(), True),
-    StructField("email", StringType(), True),
-    StructField("data_ingestao", TimestampType(), True)
-=======
     StructField("nome", StringType(), True),       # Alterado de nomeCivil para nome
     StructField("siglaPartido", StringType(), True),
     StructField("siglaUf", StringType(), True),    # Alterado de uf para siglaUf
     StructField("urlFoto", StringType(), True),
     StructField("email", StringType(), True),
     StructField("data_ingestao", TimestampType(), True) # Removidos dataNascimento e sexo (não retornados na listagem)
->>>>>>> Stashed changes
 ])
 
 partidos_schema = StructType([
@@ -57,13 +48,8 @@ proposicoes_schema = StructType([
 ])
 
 proposicoes_autores_schema = StructType([
-<<<<<<< Updated upstream
-    StructField("nome", StringType(), True),
-    StructField("tipo", StringType(), True),
-=======
     StructField("nome", StringType(), True),        # Alterado de nomeAutor para nome
     StructField("tipo", StringType(), True),        # Alterado de tipoAutor para tipo
->>>>>>> Stashed changes
     StructField("uri", StringType(), True),
     StructField("codTipo", IntegerType(), True),
     StructField("ordemAssinatura", IntegerType(), True),
@@ -82,15 +68,9 @@ votacoes_schema = StructType([
 ])
 
 votos_schema = StructType([
-<<<<<<< Updated upstream
-    StructField("idVotacao", StringType(), True),
-    StructField("idDeputado", LongType(), True),
-    StructField("parent_id", StringType(), True),
-=======
     StructField("idVotacao",  StringType(), True),
     StructField("idDeputado",  LongType(), True),
     StructField("parent_id",  StringType(), True),
->>>>>>> Stashed changes
     StructField("nomeDeputado", StringType(), True),
     StructField("voto", StringType(), True),
     StructField("data_ingestao", TimestampType(), True)
@@ -164,7 +144,7 @@ CAMARA_DATASETS = {
         "merge_keys": ["id"],
         "schema": BRONZE_SCHEMAS["proposicoes"]
     },
-        "proposicoes_autores": {
+    "proposicoes_autores": {
         "source": "camara",
         "endpoint": "/proposicoes/{id}/autores",
         "table": "proposicoes_autores",
@@ -172,11 +152,7 @@ CAMARA_DATASETS = {
         "incremental": False,
         "pagination": False,
         "requires_parent": "proposicoes",
-<<<<<<< Updated upstream
-        "merge_keys": ["parent_id", "nome"],
-=======
         "merge_keys": ["parent_id", "nome"], # Alterado para usar parent_id e nome
->>>>>>> Stashed changes
         "schema": BRONZE_SCHEMAS["proposicoes_autores"]
     },
     "votacoes": {

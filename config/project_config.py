@@ -22,7 +22,7 @@ class ProjectConfig:
     # Configurações da API da Câmara
     API_BASE_URL = "https://dadosabertos.camara.leg.br/api/v2"
     PAGE_SIZE = 100
-    MAX_PAGES_PER_EXECUTION = 120
+    MAX_PAGES_PER_EXECUTION = 10
     REQUEST_TIMEOUT = 30
 
     # Período de análise definido para o mandato atual (2023 - 2027)

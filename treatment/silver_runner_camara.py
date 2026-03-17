@@ -156,10 +156,6 @@ try:
     )
     write_silver(df_autores_silver, "proposicoes_autores", ["id_proposicao", "nome_autor"])
 
-<<<<<<< Updated upstream
-    write_silver(df_autores_silver, "proposicoes_autores", ["id_proposicao", "nome_autor"])
-=======
->>>>>>> Stashed changes
 except Exception as e:
     print(f"Aviso: Falha ao processar Autores: {e}")
 
@@ -226,11 +222,7 @@ try:
     # Silver Votações
     df_votacoes_silver = df_votacoes.select(
         col("id").cast("string").alias("id_votacao"),
-<<<<<<< Updated upstream
-        to_date(col("data"), "yyyy-MM-dd").alias("data_votacao"),
-=======
         to_date(col("data")).alias("data_votacao"),
->>>>>>> Stashed changes
         col("descricao").alias("descricao_votacao"),
         current_timestamp().alias("data_processamento")
     )

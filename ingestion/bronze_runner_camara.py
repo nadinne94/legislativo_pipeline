@@ -34,7 +34,7 @@ dataset_param = dbutils.widgets.get("dataset")
 # COMMAND ----------
 
 # DBTITLE 1,Importações Adicionais
-from pyspark.sql.functions import current_timestamp
+from pyspark.sql.functions import current_timestamp, lit
 from concurrent.futures import ThreadPoolExecutor
 from delta.tables import DeltaTable
 import time
@@ -136,10 +136,8 @@ def ingest_simple_dataset(dataset_name, config):
     # ----------------------------
     # CHAMADA DA API
     # ----------------------------
-=======
-        data = get_all_pages(endpoint, params)
->>>>>>> Stashed changes
 
+    data = get_all_pages(endpoint, params)
     if not data:
         print(f"Nenhum registro retornado para {dataset_name}")
         return
@@ -149,7 +147,6 @@ def ingest_simple_dataset(dataset_name, config):
     
     # Seleciona apenas as colunas que existem tanto no dado quanto no schema esperado
     # Preenche com nulo as colunas que estão no schema mas não vieram no dado
-    from pyspark.sql.functions import lit
     expected_cols = config["schema"].fieldNames()
     for col_name in expected_cols:
         if col_name not in df_raw.columns and col_name != "data_ingestao":
@@ -157,7 +154,6 @@ def ingest_simple_dataset(dataset_name, config):
             
     df = df_raw.select(*[c for c in expected_cols if c != "data_ingestao"])
     df = df.withColumn("data_ingestao", current_timestamp())
-
 
     # ----------------------------
     # ATUALIZA WATERMARK
@@ -192,12 +188,11 @@ def ingest_nested_dataset(dataset_name, config):
     try:
         parent_df = spark.read.format("delta").load(parent_path)
         # Limita para não estourar a API em testes iniciais
-            parent_ids = [r["id"] for r in parent_df.select("id").distinct().limit(ProjectConfig.MAX_PARENT_IDS).collect()]
+        parent_ids = [r["id"] for r in parent_df.select("id").distinct().limit(ProjectConfig.MAX_PARENT_IDS).collect()]
     except Exception as e:
         print(f"Erro ao ler pai {parent_dataset}: {e}")
         return
 
-<<<<<<< Updated upstream
     try:
         data = fetch_nested_data(config["endpoint"], parent_ids)
     except Exception as e:
@@ -208,16 +203,9 @@ def ingest_nested_dataset(dataset_name, config):
         print(f"Nenhum registro retornado para {dataset_name}")
         return
 
-=======
-        data = fetch_nested_data(config["endpoint"], parent_ids)
-    if not data:
-        print(f"Nenhum registro retornado para {dataset_name}")
-        return
-
->>>>>>> Stashed changes
     # Cria DataFrame com schema flexível
     df_raw = spark.createDataFrame(data)
-    from pyspark.sql.functions import lit
+    
     expected_cols = config["schema"].fieldNames()
     for col_name in expected_cols:
         if col_name not in df_raw.columns and col_name != "data_ingestao":
